@@ -6,6 +6,7 @@ var cio = require('cheerio');
 var mkdirp = require('mkdirp');
 var fs = require('fs-extra');
 var replay = require('request-replay');
+var exec = require('child_process').exec;
 
 const MAX_DEPTH = 5;
 
@@ -97,8 +98,15 @@ if(program.download) {
 }else{
 	var cd = findContestDir();
 	if(cd !== false){
-		console.log(cd);
+		if(program.test){
+			var pdir = dir + idx + '/';
+			var cpp = pdir + idx + '.cpp';
+			
+			var gpp = exec('g++ ' + cpp, function(error, stdout, stderr){
+				console.log(stderr);
+			});
+		}
 	}else{
-		console.log("erro");
+		// package.json not found
 	}
 }
