@@ -7,8 +7,20 @@ var mkdirp = require('mkdirp');
 var fs = require('fs-extra');
 var replay = require('request-replay');
 
+const MAX_DEPTH = 5;
+
 function br2nl(str){
     return str.replace(/<br\s*[\/]?>/gi, "\n");
+}
+
+function findContestDir(){
+	var dir = "";
+	while(!fs.existsSync(dir + "contest.json") && depth < MAX_DEPTH){
+		dir += "../";
+		depth++;
+	}
+	if(depth >= MAX_DEPTH) return false;
+	return dir;
 }
 
 function getProblems(contestId, callback){
@@ -81,4 +93,11 @@ if(program.download) {
             console.log("Failed to obtain contest problems.");
         }
     });
+}else{
+	var cd = findContestDir();
+	if(cd !== false){
+		console.log(cd);
+	}else{
+	
+	}
 }
