@@ -103,8 +103,21 @@ if(program.download) {
 			var pdir = cd + idx + '/';
 			var cpp = pdir + idx + '.cpp';
 			
+			var tests = [];
+			// pega os testes
+			
 			var gpp = exec('g++ ' + cpp, function(error, stdout, stderr){
 				console.log(stderr);
+				if(!error){
+					console.log("Compiled successfully.");
+					// compilado com suxexo
+					// partiu executar o breguete
+					tests.forEach(function(e, i){
+						console.log("Executing test #" + i + "...");
+					});
+				}else{
+					console.log("Compilation error.");	
+				}
 			});
 		}
 	}else{
