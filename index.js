@@ -99,7 +99,7 @@ if(program.download) {
 	var cd = findContestDir();
 	if(cd !== false){
 		if(program.test){
-			var pdir = dir + idx + '/';
+			var pdir = cd + idx + '/';
 			var cpp = pdir + idx + '.cpp';
 			
 			var gpp = exec('g++ ' + cpp, function(error, stdout, stderr){
