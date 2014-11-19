@@ -98,6 +98,6 @@ if(program.download) {
 	if(cd !== false){
 		console.log(cd);
 	}else{
-	
+		console.log("erro");
 	}
 }

@@ -15,6 +15,7 @@ function br2nl(str){
 
 function findContestDir(){
 	var dir = "";
+	var depth = 0;
 	while(!fs.existsSync(dir + "contest.json") && depth < MAX_DEPTH){
 		dir += "../";
 		depth++;
