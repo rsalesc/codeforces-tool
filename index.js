@@ -7,6 +7,11 @@ var mkdirp = require('mkdirp');
 var fs = require('fs-extra');
 var replay = require('request-replay');
 var exec = require('child_process').exec;
+var glob = require('glob');
+var path = require('path');
+var colors = require('colors');
+
+var rlsync = require('readline-sync');
 
 const MAX_DEPTH = 5;
 
@@ -92,7 +97,7 @@ if(program.download) {
             });
             console.log("Contest folders created.");
         } else {
-            console.log("Failed to obtain contest problems.");
+            console.log("Failed to obtain contest problems.".red);
         }
     });
 }else{
@@ -105,22 +110,33 @@ if(program.download) {
 			
 			var tests = [];
 			// pega os testes
-			
-			var gpp = exec('g++ ' + cpp, function(error, stdout, stderr){
-				console.log(stderr);
+
+            var tfiles = glob.sync('*.in', {cwd: pdir});
+
+            tfiles.forEach(function(e, i) {
+                var test = {input: fs.readFileSync(pdir + e, 'utf8'), testname: path.basename(e, '.in')};
+                if(fs.existsSync(pdir + test.testname + '.out')) test.output = fs.readFileSync(pdir + test.testname + '.out', 'utf8');
+                tests.push(test);
+            });
+
+			var gpp = exec('g++ ' + idx + '.cpp', {cwd: pdir}, function(error, stdout, stderr){
+				if(stderr.length > 0) console.log(stderr);
 				if(!error){
-					console.log("Compiled successfully.");
+					console.log("Compiled successfully.".green);
 					// compilado com suxexo
 					// partiu executar o breguete
 					tests.forEach(function(e, i){
-						console.log("Executing test #" + i + "...");
+						console.log(colors.yellow("Executing test #" + i + " (" + e.testname + ".in)..."));
+                        // run sh to test
+                        rlsync.question('Press any key to continue...');
 					});
 				}else{
-					console.log("Compilation error.");	
+					console.log("Compilation error.".red);
 				}
 			});
 		}
 	}else{
 		// package.json not found
+        console.log("Constest.json file not found in working directory.".red);
 	}
 }
