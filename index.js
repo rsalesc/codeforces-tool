@@ -6,7 +6,9 @@ var cio = require('cheerio');
 var mkdirp = require('mkdirp');
 var fs = require('fs-extra');
 var replay = require('request-replay');
+var deasync  = require('deasync');
 var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
 var glob = require('glob');
 var path = require('path');
 var colors = require('colors');
@@ -14,6 +16,21 @@ var colors = require('colors');
 var rlsync = require('readline-sync');
 
 const MAX_DEPTH = 5;
+
+function execSync(){
+    var done = false;
+    var ret;
+    var cb_s = function(err, stdout, stderr){
+        ret = {err: err, stdout: stdout, stderr: stderr};
+        done = true;
+    };
+    var args = Array.prototype.slice.call(arguments);
+    args.push(cb_s);
+    exec.apply(null, args);
+
+    while(!done) deasync.runLoopOnce();
+    return ret;
+}
 
 function br2nl(str){
     return str.replace(/<br\s*[\/]?>/gi, "\n");
@@ -74,7 +91,7 @@ program
     .version('0.0.0')
     .option('-d, --download [contest-id]', 'download a contest')
     .option('-u, --update', 'update a downloaded contest')
-    .option('-t, --test [problem-index]', 'test a problem')
+    .option('-t, --test [problem-ndex]', 'test a problem')
     .option('-a, --add [problem-index]', 'add testcase for a problem')
     .parse(process.argv);
 
@@ -128,6 +145,7 @@ if(program.download) {
 					tests.forEach(function(e, i){
 						console.log(colors.yellow("Executing test #" + i + " (" + e.testname + ".in)..."));
                         // run sh to test
+                        var lulz = execSync('./a.out', {cwd: pdir});
                         rlsync.question('Press any key to continue...');
 					});
 				}else{

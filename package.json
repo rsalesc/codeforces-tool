@@ -33,6 +33,7 @@
     "glob": "~4.1.6",
     "paktc": "~1.0.1",
     "readline-sync": "~0.4.9",
-    "colors": "~1.0.3"
+    "colors": "~1.0.3",
+    "deasync": "0.0.7"
   }
 }
