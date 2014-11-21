@@ -16,6 +16,7 @@ var colors = require('colors');
 var rlsync = require('readline-sync');
 
 const MAX_DEPTH = 5;
+const CFG_PATH = __dirname + "/config.json";
 
 function execSync(){
     var done = false;
@@ -34,6 +35,13 @@ function execSync(){
 
 function br2nl(str){
     return str.replace(/<br\s*[\/]?>/gi, "\n");
+}
+
+function wc(str, obj){
+    for(key in obj){
+        str = str.replace("%{" + key + "}", obj[key]);
+    }
+    return str;
 }
 
 function findContestDir(){
@@ -89,11 +97,16 @@ function getProblems(contestId, callback){
 
 program
     .version('0.0.0')
-    .option('-d, --download [contest-id]', 'download a contest')
+    .option('-d, --download [contest-id]', 'download a contest') // done
     .option('-u, --update', 'update a downloaded contest')
-    .option('-t, --test [problem-ndex]', 'test a problem')
+    .option('-t, --test [problem-index]', 'test a problem') // done
     .option('-a, --add [problem-index]', 'add testcase for a problem')
+    .option("-c, --config", "config tool parameters")
     .parse(process.argv);
+
+var cfg = (function(){
+    return fs.readJsonFileSync(CFG_PATH);
+})();
 
 if(program.download) {
     getProblems(program.download, function (error, problems) {
@@ -105,7 +118,7 @@ if(program.download) {
                 // create folders and templates
                 var dir = program.download + '/' + e.idx + '/';
                 mkdirp.sync(dir);
-                fs.copySync('template.cpp', dir + e.idx + '.cpp');
+                fs.copySync('template.' + cfg.extension, dir + e.idx + '.' + cfg.extension);
                 // creating in out files
                 e.tests.forEach(function (e, i) {
                     fs.outputFileSync(dir + 'test' + i + '.in', e.input);
@@ -119,11 +132,12 @@ if(program.download) {
     });
 }else{
 	var cd = findContestDir();
+    var contest = fs.readJsonFileSync(cd + 'contest.json');
 	if(cd !== false){
 		if(program.test){
 			var idx = program.test;
 			var pdir = cd + idx + '/';
-			var cpp = pdir + idx + '.cpp';
+			//var cpp = pdir + idx + '.' + cfg.extension;
 			
 			var tests = [];
 			// pega os testes
@@ -136,22 +150,70 @@ if(program.download) {
                 tests.push(test);
             });
 
-			var gpp = execSync('g++ ' + idx + '.cpp', {cwd: pdir});
+			var gpp = execSync(wc(cfg.compilation, {file: idx + '.' + cfg.extension}), {cwd: pdir});
             if(gpp.stderr.length > 0) console.log(gpp.stderr);
-            if(!error){
+            if(!gpp.err){
                 console.log("Compiled successfully.".green);
                 // compilado com suxexo
                 // partiu executar o breguete
                 tests.forEach(function(e, i){
                     console.log(colors.yellow("Executing test #" + i + " (" + e.testname + ".in)..."));
                     // run sh to test
-                    var lulz = execSync('./a.out', {cwd: pdir});
-                    rlsync.question('Press any key to continue...');
+                    var aout = execSync('./a.out < ' + e.testname + '.in', {cwd: pdir});
+                    var input = fs.readFileSync(pdir + e.testname + '.in', 'utf8');
+                    var output = false;
+                    if(fs.existsSync(pdir + e.testname + '.out')) output = fs.readFileSync(pdir + e.testname + '.out', 'utf8');
+                    if(aout.err) {
+                        if (aout.stdout.length != 0) console.log(aout.stdout);
+                        console.log(aout.err.toString().red);
+                    }else {
+                        console.log('Input'.magenta);
+                        console.log(input);
+                        console.log('Output'.magenta);
+                        console.log(aout.stdout);
+                    }
+                    if(output){
+                        console.log('Expected Output:'.magenta);
+                        console.log(output);
+                    }
+                    if(i != tests.length-1) rlsync.question('Press any key to continue...');
                 });
             }else{
                 console.log("Compilation error.".red);
             }
-		}
+		}else if(program.update){
+            getProblems(contest.id, function (error, problems) {
+                if (!error) {
+                    var contest = {id: program.download, problems: problems};
+                    fs.outputJsonSync(program.download + '/contest.json', contest);
+                    problems.forEach(function (e) {
+                        console.log('Updating problem ' + e.idx + '.');
+                        // create folders and templates
+                        var dir = program.download + '/' + e.idx + '/';
+                        mkdirp.sync(dir);
+                        // fs.copySync('template.cpp', dir + e.idx + '.cpp');
+                        // creating in out files
+                        e.tests.forEach(function (e, i) {
+                            fs.outputFileSync(dir + 'test' + i + '.in', e.input);
+                            fs.outputFileSync(dir + 'test' + i + '.out', e.output);
+                        });
+                    });
+                    console.log("Contest folders updated.");
+                } else {
+                    console.log("Failed to obtain contest problems.".red);
+                }
+            });
+        }else if(program.add){
+            var idx = program.add;
+            var pdir = cd + idx + '/';
+            var i = 0;
+            while(fs.existsSync(pdir + 'test' + i + '.in')) i++;
+            var basen = pdir + 'test' + i;
+            exec(cfg.editor + ' ' + basen + '.in');
+            exec(cfg.editor + ' ' + basen + '.out');
+        }else if(program.config){
+            execSync('xdg-open ' + CFG_PATH);
+        }
 	}else{
 		// package.json not found
         console.log("Constest.json file not found in working directory.".red);
