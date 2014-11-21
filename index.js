@@ -136,22 +136,21 @@ if(program.download) {
                 tests.push(test);
             });
 
-			var gpp = exec('g++ ' + idx + '.cpp', {cwd: pdir}, function(error, stdout, stderr){
-				if(stderr.length > 0) console.log(stderr);
-				if(!error){
-					console.log("Compiled successfully.".green);
-					// compilado com suxexo
-					// partiu executar o breguete
-					tests.forEach(function(e, i){
-						console.log(colors.yellow("Executing test #" + i + " (" + e.testname + ".in)..."));
-                        // run sh to test
-                        var lulz = execSync('./a.out', {cwd: pdir});
-                        rlsync.question('Press any key to continue...');
-					});
-				}else{
-					console.log("Compilation error.".red);
-				}
-			});
+			var gpp = execSync('g++ ' + idx + '.cpp', {cwd: pdir});
+            if(gpp.stderr.length > 0) console.log(gpp.stderr);
+            if(!error){
+                console.log("Compiled successfully.".green);
+                // compilado com suxexo
+                // partiu executar o breguete
+                tests.forEach(function(e, i){
+                    console.log(colors.yellow("Executing test #" + i + " (" + e.testname + ".in)..."));
+                    // run sh to test
+                    var lulz = execSync('./a.out', {cwd: pdir});
+                    rlsync.question('Press any key to continue...');
+                });
+            }else{
+                console.log("Compilation error.".red);
+            }
 		}
 	}else{
 		// package.json not found
