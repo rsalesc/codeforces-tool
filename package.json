@@ -34,6 +34,8 @@
     "paktc": "~1.0.1",
     "readline-sync": "~0.4.9",
     "colors": "~1.0.3",
-    "deasync": "0.0.7"
+    "deasync": "0.0.7",
+    "request-sync": "~1.0.0",
+    "sync-request": "~1.0.1"
   }
 }

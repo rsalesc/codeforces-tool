@@ -12,6 +12,8 @@ var spawn = require('child_process').spawn;
 var glob = require('glob');
 var path = require('path');
 var colors = require('colors');
+var urlx = require('url');
+var rs = require('sync-request');
 
 var rlsync = require('readline-sync');
 
@@ -85,8 +87,21 @@ function getProblems(contestId, callback){
 
             if(problems.length == 0)
                 callback(true);
-            else
+            else{
+                // process images
+                $('img[src]').each(function(i, e){
+                    // checar se já não está em base64
+                    // baixar css
+                    console.log("Downloading image #" + i + "...");
+                    var src = urlx.resolve(url, $(e).attr('src'));
+                    var result = rs('GET', src);
+                    if(result.statusCode == 200){
+                        $(e).attr('src', 'data:'+result.headers['content-type']+';base64,'+result.body.toString('base64'));
+                    }
+                });
+                problems.html = $.html();
                 callback(false, problems);
+            }
         }else{
             callback(true);
         }
@@ -125,6 +140,7 @@ if(program.download) {
                     fs.outputFileSync(dir + 'test' + i + '.out', e.output);
                 });
             });
+            fs.outputFileSync(program.download + '/set.html', problems.html);
             console.log("Contest folders created.");
         } else {
             console.log("Failed to obtain contest problems.".red);
@@ -182,14 +198,16 @@ if(program.download) {
                 console.log("Compilation error.".red);
             }
 		}else if(program.update){
-            getProblems(contest.id, function (error, problems) {
+            var ct = contest.id;
+            var cdd = cd;
+            getProblems(ct, function (error, problems) {
                 if (!error) {
-                    var contest = {id: program.download, problems: problems};
-                    fs.outputJsonSync(program.download + '/contest.json', contest);
+                    var contest = {id: ct, problems: problems};
+                    fs.outputJsonSync(cdd + 'contest.json', contest);
                     problems.forEach(function (e) {
                         console.log('Updating problem ' + e.idx + '.');
                         // create folders and templates
-                        var dir = program.download + '/' + e.idx + '/';
+                        var dir = cdd + e.idx + '/';
                         mkdirp.sync(dir);
                         // fs.copySync('template.cpp', dir + e.idx + '.cpp');
                         // creating in out files
@@ -198,6 +216,7 @@ if(program.download) {
                             fs.outputFileSync(dir + 'test' + i + '.out', e.output);
                         });
                     });
+                    fs.outputFileSync(cdd + 'set.html', problems.html);
                     console.log("Contest folders updated.");
                 } else {
                     console.log("Failed to obtain contest problems.".red);
