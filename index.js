@@ -99,6 +99,8 @@ function getProblems(contestId, callback){
                         $(e).attr('src', 'data:'+result.headers['content-type']+';base64,'+result.body.toString('base64'));
                     }
                 });
+                $("link[rel=stylesheet], script[type='text/javascript']").remove();
+                $('head').append('<style>' + fs.readFileSync(__dirname + '/style.css', 'utf8') + '</style>');
                 problems.html = $.html();
                 callback(false, problems);
             }
@@ -117,6 +119,7 @@ program
     .option('-t, --test [problem-index]', 'test a problem') // done
     .option('-a, --add [problem-index]', 'add testcase for a problem')
     .option("-c, --config", "config tool parameters")
+    .option("-s, --set", "view cached problemset")
     .parse(process.argv);
 
 var cfg = (function(){
@@ -175,7 +178,7 @@ if(program.download) {
                 tests.forEach(function(e, i){
                     console.log(colors.yellow("Executing test #" + i + " (" + e.testname + ".in)..."));
                     // run sh to test
-                    var aout = execSync('./a.out < ' + e.testname + '.in', {cwd: pdir});
+                    var aout = execSync('time ./a.out < ' + e.testname + '.in', {cwd: pdir});
                     var input = fs.readFileSync(pdir + e.testname + '.in', 'utf8');
                     var output = false;
                     if(fs.existsSync(pdir + e.testname + '.out')) output = fs.readFileSync(pdir + e.testname + '.out', 'utf8');
@@ -232,6 +235,9 @@ if(program.download) {
             exec(cfg.editor + ' ' + basen + '.out');
         }else if(program.config){
             execSync('xdg-open ' + CFG_PATH);
+        }else if(program.set){
+            console.log("Trying to open in your favourite browser.");
+            exec(cfg.browser + ' set.html', {cwd: cd});
         }
 	}else{
 		// package.json not found
